@@ -11,11 +11,12 @@
 #include <iostream>
 #include <vector>
 #include <random>
-#include <cuda_bf16.h>
 #include <cassert>
 #include <unistd.h>
 
-typedef __nv_bfloat16 bf16;
+//typedef __nv_bfloat16 bf16;
+typedef uint16_t bf16;
+
 #define CEIL_DIV(M, N) (((M) + (N)-1) / (N))
 
 void cudaCheck(cudaError_t error, const char *file, int line) {
@@ -27,18 +28,25 @@ void cudaCheck(cudaError_t error, const char *file, int line) {
 }
 #define cudaCheck(err) (cudaCheck(err, __FILE__, __LINE__))
 
-#include "examples/matmul/matmul_1.cuh"
-#include "examples/matmul/matmul_2.cuh"
-#include "examples/matmul/matmul_3.cuh"
-#include "examples/matmul/matmul_4.cuh"
-#include "examples/matmul/matmul_5.cuh"
-#include "examples/matmul/matmul_6.cuh"
-#include "examples/matmul/matmul_7.cuh"
-#include "examples/matmul/matmul_8.cuh"
-#include "examples/matmul/matmul_9.cuh"
-#include "examples/matmul/matmul_10.cuh"
-#include "examples/matmul/matmul_11.cuh"
-#include "examples/matmul/matmul_12.cuh"
+#include "examples/bt/matmul.cuh"
+#include "examples/bt/matmul_8.cuh"
+#include "examples/bt/matmul_96.cuh"
+#include "examples/bt/matmul_104.cuh"
+#include "examples/bt/matmul_128.cuh"
+#include "examples/bt/matmul_152.cuh"
+#include "examples/bt/matmul_160.cuh"
+//#include "examples/matmul/matmul_1.cuh"
+//#include "examples/matmul/matmul_2.cuh"
+//#include "examples/matmul/matmul_3.cuh"
+//#include "examples/matmul/matmul_4.cuh"
+//#include "examples/matmul/matmul_5.cuh"
+//#include "examples/matmul/matmul_6.cuh"
+//#include "examples/matmul/matmul_7.cuh"
+//#include "examples/matmul/matmul_8.cuh"
+//#include "examples/matmul/matmul_9.cuh"
+//#include "examples/matmul/matmul_10.cuh"
+//#include "examples/matmul/matmul_11.cuh"
+//#include "examples/matmul/matmul_12.cuh"
 
 std::default_random_engine generator(69);
 cublasHandle_t cublas_handle;
@@ -54,46 +62,31 @@ void runCublasGemmBF16(int M, int N, int K, bf16 *A, bf16 *B, bf16 *C) {
   }
 }
 
-void run_kernel(int kernel_num, int M, int N, int K, bf16 *A, bf16 *B, bf16 *C, int *DB = nullptr) {
+void run_kernel(int kernel_num, int M, int N, int K, bf16 *A, bf16 *B, bf16 *C, unsigned long long iterations, int *DB = nullptr) {
   switch (kernel_num) {
     case 0:
       runCublasGemmBF16(M, N, K, A, B, C);
       break;
-    case 1:
-      runKernel1(M, N, K, A, B, C);
-      break;
-    case 2:
-      runKernel2(M, N, K, A, B, C);
-      break;
     case 3:
-      runKernel3(M, N, K, A, B, C, DB);
-      break;
-    case 4:
-      runKernel4(M, N, K, A, B, C, DB);
-      break;
-    case 5:
-      runKernel5(M, N, K, A, B, C, DB);
-      break;
-    case 6:
-      runKernel6(M, N, K, A, B, C, DB);
-      break;
-    case 7:
-      runKernel7(M, N, K, A, B, C, DB);
+      runKernel3(M, N, K, A, B, C, DB, iterations);
       break;
     case 8:
-      runKernel8(M, N, K, A, B, C, DB);
+      runKernel8(M, N, K, A, B, C, DB, iterations);
       break;
-    case 9:
-      runKernel9(M, N, K, A, B, C, DB);
+    case 96:
+      runKernel96(M, N, K, A, B, C, DB, iterations);
       break;
-    case 10:
-      runKernel10(M, N, K, A, B, C, DB);
+    case 104:
+      runKernel104(M, N, K, A, B, C, DB, iterations);
       break;
-    case 11:
-      runKernel11(M, N, K, A, B, C, DB);
+    case 128:
+      runKernel128(M, N, K, A, B, C, DB, iterations);
       break;
-    case 12:
-      runKernel12(M, N, K, A, B, C, DB);
+    case 152:
+      runKernel152(M, N, K, A, B, C, DB, iterations);
+      break;
+    case 160:
+      runKernel160(M, N, K, A, B, C, DB, iterations);
       break;
   }
 }
@@ -112,7 +105,7 @@ bool verify_matrix(bf16 *matRef, bf16 *matOut, int N) {
   for (i = 0; i < N; i++) {
     int r = i / 8192, c = i % 8192;
     int it = c*8192+r;
-    diff = std::fabs(__bfloat162float(matRef[i]) - __bfloat162float( matOut[i]));
+    diff = std::fabs(__bfloat162float(matRef[i] - matOut[i]));
     if (diff > 0.1) {
       printf("Divergence! Should %5.2f, Is %5.2f (Diff %5.2f) at %d\n",
       __bfloat162float(matRef[i]), __bfloat162float(matOut[i]), diff, i);
@@ -127,8 +120,25 @@ __global__ void warmupKernel() {
   s[0] += s[1];
 }
 
-int main() {
-  warmupKernel<<<1024, 1024>>>();
+int main(int argc, char** argv) {
+ unsigned long long iterations;
+ int kernel_num = 3; // Default kernel number
+if (argc != 2 && argc != 3) {
+    // Usage message now reflects the two accepted patterns
+    fprintf(stderr, "usage: %s <iterations>\n", argv[0]);
+    fprintf(stderr, "   or: %s <kernel_number> <iterations>\n", argv[0]);
+    exit(1);
+} else if (argc == 3) {
+    // Case 1: Two arguments provided
+    kernel_num = atoi(argv[1]);
+    iterations = atoll(argv[2]);
+    printf("Running kernel %d for %lld iterations.\n", kernel_num, iterations);
+} else { // argc == 2
+    // Case 2: Only one argument provided
+    iterations = atoll(argv[1]);
+    printf("Running default kernel %d for %lld iterations.\n", kernel_num, iterations);
+} 
+  //warmupKernel<<<1024, 1024>>>();
 
   cublasCreate(&cublas_handle);
   float elapsed_time;
@@ -167,12 +177,12 @@ int main() {
   cudaCheck(cudaMemcpy(dB, B, sizeof(bf16) * max_size * max_size,
       cudaMemcpyHostToDevice));
 
-  int repeat_times = 8;
-  bool run_verif = true;
-  for (int kernel_num : {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}) {
+  int repeat_times = 1;
+  bool run_verif = false;
+//  for (int kernel_num : {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}) {
     // for (int kernel_num : {0, 11}) {
     // Give the GPU some rest to avoid thermal throttling
-    sleep(5);
+    //sleep(5);
     std::cout << "KERNEL " << kernel_num << std::endl;
     // Verify against cuBLAS. Also serves as a warmup step.
     if (run_verif) {
@@ -182,8 +192,8 @@ int main() {
       memset(DB, ~0, sizeof(int) * max_size * 128);
       cudaCheck(cudaMemcpy(dDB, DB, sizeof(int) * max_size * 128,
         cudaMemcpyHostToDevice));
-      run_kernel(0, m, n, k, dA, dB, dC_ref); // cuBLAS
-      run_kernel(kernel_num, m, n, k, dA, dB, dC, dDB); // Executes the kernel, modifies the result matrix
+      //run_kernel(0, m, n, k, dA, dB, dC_ref); // cuBLAS
+      run_kernel(kernel_num, m, n, k, dA, dB, dC, iterations, dDB); // Executes the kernel, modifies the result matrix
       cudaCheck(cudaDeviceSynchronize());
       cudaCheck(cudaGetLastError()); // Check for async errors during kernel run
       cudaMemcpy(C, dC, sizeof(bf16) * max_size * max_size, cudaMemcpyDeviceToHost);
@@ -212,24 +222,24 @@ int main() {
         printf("Load: %f, Compute: %f,  Store: %f, Datapoints: %d\n", (sumLoad + .0) / cntLoad, (sumCompute + .0) / cntCompute, (sumStore + .0) / cntStore, times);
       }
 
-    }
+    }//if(run_verif)
 
     // Benchmark
     cudaEventRecord(start);
     for (int j = 0; j < repeat_times; j++) {
-      run_kernel(kernel_num, m, n, k, dA, dB, dC);
+      run_kernel(kernel_num, m, n, k, dA, dB, dC, iterations);
     }
     cudaEventRecord(stop);
     cudaEventSynchronize(start);
     cudaEventSynchronize(stop);
     cudaEventElapsedTime(&elapsed_time, start, stop);
-
-    long flops = (2LL * m) * (n * k);
-    printf(
-        "Average elapsed time: (%7.6f) s, performance: (%7.1f) TFLOPS. size: (%ld).\n\n",
-        elapsed_time / 1000.0 / repeat_times,
-        (repeat_times * flops * 1e-9) / elapsed_time, m);
-  }
+    printf("gpu execution time = %.3f ms\n", elapsed_time);  
+   // long flops = (2LL * m) * (n * k);
+   // printf(
+   //     "Average elapsed time: (%7.6f) s, performance: (%7.1f) TFLOPS. size: (%ld).\n\n",
+   //     elapsed_time / 1000.0 / repeat_times,
+   //     (repeat_times * flops * 1e-9) / elapsed_time, m);
+  //} //for loop
 
   // Free up CPU and GPU space
   free(A);
