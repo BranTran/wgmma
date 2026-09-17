@@ -1,5 +1,5 @@
 
-namespace M192{
+namespace M208{
 
 using barrier = cuda::barrier<cuda::thread_scope_block>;
 namespace cde = cuda::device::experimental;
@@ -62,42 +62,34 @@ __host__ static inline CUtensorMap* allocate_and_create_tensor_map(uint16_t* src
 }
 
 template<int ScaleD, int ScaleA, int ScaleB, int TransA, int TransB>
-__device__ __forceinline__ void wgmma192(float d[12][8], uint16_t* sA, uint16_t* sB, unsigned long long iterations) {
+__device__ void wgmma208(float d[13][8], uint16_t* sA, uint16_t* sB, unsigned long long iterations) {
     uint64_t desc_a = make_smem_desc(&sA[0]);
     uint64_t desc_b = make_smem_desc(&sB[0]);
     #pragma unroll 10
     for(unsigned long long i=0; i < iterations; i++){
         asm volatile(
             "{\n"
-            "wgmma.mma_async.sync.aligned.m64n192k16.f32.f16.f16 "
-            "{%0,   %1,   %2,   %3,   %4,   %5,   %6,   %7,   "
-            " %8,   %9,   %10,  %11,  %12,  %13,  %14,  %15,  "
-            " %16,  %17,  %18,  %19,  %20,  %21,  %22,  %23,  "
-            " %24,  %25,  %26,  %27,  %28,  %29,  %30,  %31,  "
-            " %32,  %33,  %34,  %35,  %36,  %37,  %38,  %39,  "
-            " %40,  %41,  %42,  %43,  %44,  %45,  %46,  %47,  "
-            " %48,  %49,  %50,  %51,  %52,  %53,  %54,  %55,  "
-            " %56,  %57,  %58,  %59,  %60,  %61,  %62,  %63,  "
-            " %64,  %65,  %66,  %67,  %68,  %69,  %70,  %71,  "
-            " %72,  %73,  %74,  %75,  %76,  %77,  %78,  %79,  "
-            " %80,  %81,  %82,  %83,  %84,  %85,  %86,  %87,  "
-            " %88,  %89,  %90,  %91,  %92,  %93,  %94,  %95},  "
-            " %96,"
-            " %97,"
-            " %98,    %99,  %100,  %101,  %102;\n"
+            "wgmma.mma_async.sync.aligned.m64n208k16.f32.f16.f16 {%0, %1, %2, %3, %4, %5, %6, %7, %8, %9, %10, %11, %12, %13, %14, %15, %16, %17, %18, %19, %20, %21, %22, %23, %24, %25, %26, %27, %28, %29, %30, %31, %32, %33, %34, %35, %36, %37, %38, %39, %40, %41, %42, %43, %44, %45, %46, %47, %48, %49, %50, %51, %52, %53, %54, %55, %56, %57, %58, %59, %60, %61, %62, %63, %64, %65, %66, %67, %68, %69, %70, %71, %72, %73, %74, %75, %76, %77, %78, %79, %80, %81, %82, %83, %84, %85, %86, %87, %88, %89, %90, %91, %92, %93, %94, %95, %96, %97, %98, %99, %100, %101, %102, %103}, %104, %105, %106, %107, %108, %109, %110;\n"
             "}\n"
-            :   "+f"(d[0][0]), "+f"(d[0][1]), "+f"(d[0][2]), "+f"(d[0][3]), "+f"(d[0][4]), "+f"(d[0][5]), "+f"(d[0][6]), "+f"(d[0][7]),
-                "+f"(d[1][0]), "+f"(d[1][1]), "+f"(d[1][2]), "+f"(d[1][3]), "+f"(d[1][4]), "+f"(d[1][5]), "+f"(d[1][6]), "+f"(d[1][7]),
-                "+f"(d[2][0]), "+f"(d[2][1]), "+f"(d[2][2]), "+f"(d[2][3]), "+f"(d[2][4]), "+f"(d[2][5]), "+f"(d[2][6]), "+f"(d[2][7]),
-                "+f"(d[3][0]), "+f"(d[3][1]), "+f"(d[3][2]), "+f"(d[3][3]), "+f"(d[3][4]), "+f"(d[3][5]), "+f"(d[3][6]), "+f"(d[3][7]),
-                "+f"(d[4][0]), "+f"(d[4][1]), "+f"(d[4][2]), "+f"(d[4][3]), "+f"(d[4][4]), "+f"(d[4][5]), "+f"(d[4][6]), "+f"(d[4][7]),
-                "+f"(d[5][0]), "+f"(d[5][1]), "+f"(d[5][2]), "+f"(d[5][3]), "+f"(d[5][4]), "+f"(d[5][5]), "+f"(d[5][6]), "+f"(d[5][7]),
-                "+f"(d[6][0]), "+f"(d[6][1]), "+f"(d[6][2]), "+f"(d[6][3]), "+f"(d[6][4]), "+f"(d[6][5]), "+f"(d[6][6]), "+f"(d[6][7]),
-                "+f"(d[7][0]), "+f"(d[7][1]), "+f"(d[7][2]), "+f"(d[7][3]), "+f"(d[7][4]), "+f"(d[7][5]), "+f"(d[7][6]), "+f"(d[7][7]),
-                "+f"(d[8][0]), "+f"(d[8][1]), "+f"(d[8][2]), "+f"(d[8][3]), "+f"(d[8][4]), "+f"(d[8][5]), "+f"(d[8][6]), "+f"(d[8][7]),
-                "+f"(d[9][0]), "+f"(d[9][1]), "+f"(d[9][2]), "+f"(d[9][3]), "+f"(d[9][4]), "+f"(d[9][5]), "+f"(d[9][6]), "+f"(d[9][7]),
-                "+f"(d[10][0]), "+f"(d[10][1]), "+f"(d[10][2]), "+f"(d[10][3]), "+f"(d[10][4]), "+f"(d[10][5]), "+f"(d[10][6]), "+f"(d[10][7]),
-                "+f"(d[11][0]), "+f"(d[11][1]), "+f"(d[11][2]), "+f"(d[11][3]), "+f"(d[11][4]), "+f"(d[11][5]), "+f"(d[11][6]), "+f"(d[11][7])
+            :
+                "+f"(d[0][0]), "+f"(d[0][1]), "+f"(d[0][2]), "+f"(d[0][3]), "+f"(d[0][4]), "+f"(d[0][5]),
+                "+f"(d[0][6]), "+f"(d[0][7]), "+f"(d[1][0]), "+f"(d[1][1]), "+f"(d[1][2]), "+f"(d[1][3]),
+                "+f"(d[1][4]), "+f"(d[1][5]), "+f"(d[1][6]), "+f"(d[1][7]), "+f"(d[2][0]), "+f"(d[2][1]),
+                "+f"(d[2][2]), "+f"(d[2][3]), "+f"(d[2][4]), "+f"(d[2][5]), "+f"(d[2][6]), "+f"(d[2][7]),
+                "+f"(d[3][0]), "+f"(d[3][1]), "+f"(d[3][2]), "+f"(d[3][3]), "+f"(d[3][4]), "+f"(d[3][5]),
+                "+f"(d[3][6]), "+f"(d[3][7]), "+f"(d[4][0]), "+f"(d[4][1]), "+f"(d[4][2]), "+f"(d[4][3]),
+                "+f"(d[4][4]), "+f"(d[4][5]), "+f"(d[4][6]), "+f"(d[4][7]), "+f"(d[5][0]), "+f"(d[5][1]),
+                "+f"(d[5][2]), "+f"(d[5][3]), "+f"(d[5][4]), "+f"(d[5][5]), "+f"(d[5][6]), "+f"(d[5][7]),
+                "+f"(d[6][0]), "+f"(d[6][1]), "+f"(d[6][2]), "+f"(d[6][3]), "+f"(d[6][4]), "+f"(d[6][5]),
+                "+f"(d[6][6]), "+f"(d[6][7]), "+f"(d[7][0]), "+f"(d[7][1]), "+f"(d[7][2]), "+f"(d[7][3]),
+                "+f"(d[7][4]), "+f"(d[7][5]), "+f"(d[7][6]), "+f"(d[7][7]), "+f"(d[8][0]), "+f"(d[8][1]),
+                "+f"(d[8][2]), "+f"(d[8][3]), "+f"(d[8][4]), "+f"(d[8][5]), "+f"(d[8][6]), "+f"(d[8][7]),
+                "+f"(d[9][0]), "+f"(d[9][1]), "+f"(d[9][2]), "+f"(d[9][3]), "+f"(d[9][4]), "+f"(d[9][5]),
+                "+f"(d[9][6]), "+f"(d[9][7]), "+f"(d[10][0]), "+f"(d[10][1]), "+f"(d[10][2]), "+f"(d[10][3]),
+                "+f"(d[10][4]), "+f"(d[10][5]), "+f"(d[10][6]), "+f"(d[10][7]), "+f"(d[11][0]), "+f"(d[11][1]),
+                "+f"(d[11][2]), "+f"(d[11][3]), "+f"(d[11][4]), "+f"(d[11][5]), "+f"(d[11][6]), "+f"(d[11][7]),
+                "+f"(d[12][0]), "+f"(d[12][1]), "+f"(d[12][2]), "+f"(d[12][3]), "+f"(d[12][4]), "+f"(d[12][5]),
+                "+f"(d[12][6]), "+f"(d[12][7])
             : "l"(desc_a), "l"(desc_b), "n"(int32_t(ScaleD)), "n"(int32_t(ScaleA)),
                 "n"(int32_t(ScaleB)), "n"(int32_t(TransA)), "n"(int32_t(TransB)));
     }
@@ -110,7 +102,7 @@ struct SMem {
 };
 
 template<int BM, int BN, int BK, int NUM_THREADS, bool DBG>
-__global__ void __launch_bounds__(NUM_THREADS) matmulKernel192(int M, int N, int K, uint16_t* C, const CUtensorMap* tensorMapA, const CUtensorMap* tensorMapB, int *DB, unsigned long long iterations) {
+__global__ void __launch_bounds__(NUM_THREADS) matmulKernel208(int M, int N, int K, uint16_t* C, const CUtensorMap* tensorMapA, const CUtensorMap* tensorMapB, int *DB, unsigned long long iterations) {
     constexpr int WGMMA_M = 64, WGMMA_K = 16, WGMMA_N=BN;
     constexpr int B_WG_M = BM / (NUM_THREADS / 128);
     extern __shared__ SMem<BM, BN, BK> s;
@@ -119,7 +111,7 @@ __global__ void __launch_bounds__(NUM_THREADS) matmulKernel192(int M, int N, int
     // Barriers cannot be in the struct and have to be declared this way
     #pragma nv_diag_suppress static_var_with_dynamic_init
     __shared__ barrier barA, barB;
-    float d[B_WG_M/WGMMA_M][WGMMA_N/16][8];
+    float d[B_WG_M/WGMMA_M][13][8];
     static_assert(sizeof(d) * NUM_THREADS == BM * BN * sizeof(float));
     memset(d, 0, sizeof(d));
 
@@ -159,7 +151,7 @@ __global__ void __launch_bounds__(NUM_THREADS) matmulKernel192(int M, int N, int
             cntLoad++;
             start = clock();
         }
-    
+
         // Compute
         warpgroup_arrive();
         #pragma unroll
@@ -167,12 +159,12 @@ __global__ void __launch_bounds__(NUM_THREADS) matmulKernel192(int M, int N, int
             uint16_t *wgmma_sA = sA + BK*(m_it + wg_idx*B_WG_M/WGMMA_M)*WGMMA_M;
             #pragma unroll
             for (int k_it = 0; k_it < BK/WGMMA_K; ++k_it) {
-                wgmma192<1, 1, 1, 0, 0>(d[m_it], &wgmma_sA[k_it*WGMMA_K], &sB[k_it*WGMMA_K], iterations);
+                wgmma208<1, 1, 1, 0, 0>(d[m_it], &wgmma_sA[k_it*WGMMA_K], &sB[k_it*WGMMA_K], iterations);
             }
         }
         warpgroup_commit_batch();
         warpgroup_wait<0>();
-        
+
         if constexpr (DBG) {
             sumCompute += clock() - start;
             cntCompute++;
@@ -206,7 +198,7 @@ __global__ void __launch_bounds__(NUM_THREADS) matmulKernel192(int M, int N, int
                 block_C[IDX(row, col+9)] = d[m_it][w][5];
                 block_C[IDX(row+8, col+8)] = d[m_it][w][6];
                 block_C[IDX(row+8, col+9)] = d[m_it][w][7];
-                
+
                 #undef IDX
             }
         }
@@ -224,9 +216,9 @@ __global__ void __launch_bounds__(NUM_THREADS) matmulKernel192(int M, int N, int
 }
 
 
-void runKernel192(int M, int N, int K, uint16_t *A, uint16_t *B, uint16_t *C, int *DB, unsigned long long iterations) {
+void runKernel208(int M, int N, int K, uint16_t *A, uint16_t *B, uint16_t *C, int *DB, unsigned long long iterations) {
     constexpr int BM = 128;
-    constexpr int BN = 192;
+    constexpr int BN = 208;
     constexpr int BK = 64;
     constexpr int NUM_THREADS = 128;
 
@@ -239,8 +231,8 @@ void runKernel192(int M, int N, int K, uint16_t *A, uint16_t *B, uint16_t *C, in
     }
     // Assert cached values are of same size
     assert (M == _prev_m && N == _prev_n && K == _prev_k);
-    auto* kernel = DB ? matmulKernel192<BM, BN, BK, NUM_THREADS, true>
-            : matmulKernel192<BM, BN, BK, NUM_THREADS, false>;
+    auto* kernel = DB ? matmulKernel208<BM, BN, BK, NUM_THREADS, true>
+            : matmulKernel208<BM, BN, BK, NUM_THREADS, false>;
     size_t sMemSize = sizeof(SMem<BM, BN, BK>);
     cudaCheck(cudaFuncSetAttribute(
         kernel,
@@ -251,4 +243,4 @@ void runKernel192(int M, int N, int K, uint16_t *A, uint16_t *B, uint16_t *C, in
 
 } // namespace
 
-using M192::runKernel192;
+using M208::runKernel208;

@@ -28,13 +28,42 @@ void cudaCheck(cudaError_t error, const char *file, int line) {
 }
 #define cudaCheck(err) (cudaCheck(err, __FILE__, __LINE__))
 
-#include "examples/bt/matmul.cuh"
+// One wgmma.mma_async.sync.aligned.m64nNk16 shape per N (N must be a
+// compile-time constant baked into the instruction mnemonic, so each valid N
+// - any multiple of 8 in [8, 256] - gets its own generated header; see
+// examples/bt/generate_matmul_kernel.py).
 #include "examples/bt/matmul_8.cuh"
+#include "examples/bt/matmul_16.cuh"
+#include "examples/bt/matmul_24.cuh"
+#include "examples/bt/matmul_32.cuh"
+#include "examples/bt/matmul_40.cuh"
+#include "examples/bt/matmul_48.cuh"
+#include "examples/bt/matmul_56.cuh"
+#include "examples/bt/matmul_64.cuh"
+#include "examples/bt/matmul_72.cuh"
+#include "examples/bt/matmul_80.cuh"
+#include "examples/bt/matmul_88.cuh"
 #include "examples/bt/matmul_96.cuh"
 #include "examples/bt/matmul_104.cuh"
+#include "examples/bt/matmul_112.cuh"
+#include "examples/bt/matmul_120.cuh"
 #include "examples/bt/matmul_128.cuh"
+#include "examples/bt/matmul_136.cuh"
+#include "examples/bt/matmul_144.cuh"
 #include "examples/bt/matmul_152.cuh"
 #include "examples/bt/matmul_160.cuh"
+#include "examples/bt/matmul_168.cuh"
+#include "examples/bt/matmul_176.cuh"
+#include "examples/bt/matmul_184.cuh"
+#include "examples/bt/matmul_192.cuh"
+#include "examples/bt/matmul_200.cuh"
+#include "examples/bt/matmul_208.cuh"
+#include "examples/bt/matmul_216.cuh"
+#include "examples/bt/matmul_224.cuh"
+#include "examples/bt/matmul_232.cuh"
+#include "examples/bt/matmul_240.cuh"
+#include "examples/bt/matmul_248.cuh"
+#include "examples/bt/matmul_256.cuh"
 //#include "examples/matmul/matmul_1.cuh"
 //#include "examples/matmul/matmul_2.cuh"
 //#include "examples/matmul/matmul_3.cuh"
@@ -67,11 +96,38 @@ void run_kernel(int kernel_num, int M, int N, int K, bf16 *A, bf16 *B, bf16 *C, 
     case 0:
       runCublasGemmBF16(M, N, K, A, B, C);
       break;
-    case 3:
-      runKernel3(M, N, K, A, B, C, DB, iterations);
-      break;
     case 8:
       runKernel8(M, N, K, A, B, C, DB, iterations);
+      break;
+    case 16:
+      runKernel16(M, N, K, A, B, C, DB, iterations);
+      break;
+    case 24:
+      runKernel24(M, N, K, A, B, C, DB, iterations);
+      break;
+    case 32:
+      runKernel32(M, N, K, A, B, C, DB, iterations);
+      break;
+    case 40:
+      runKernel40(M, N, K, A, B, C, DB, iterations);
+      break;
+    case 48:
+      runKernel48(M, N, K, A, B, C, DB, iterations);
+      break;
+    case 56:
+      runKernel56(M, N, K, A, B, C, DB, iterations);
+      break;
+    case 64:
+      runKernel64(M, N, K, A, B, C, DB, iterations);
+      break;
+    case 72:
+      runKernel72(M, N, K, A, B, C, DB, iterations);
+      break;
+    case 80:
+      runKernel80(M, N, K, A, B, C, DB, iterations);
+      break;
+    case 88:
+      runKernel88(M, N, K, A, B, C, DB, iterations);
       break;
     case 96:
       runKernel96(M, N, K, A, B, C, DB, iterations);
@@ -79,14 +135,62 @@ void run_kernel(int kernel_num, int M, int N, int K, bf16 *A, bf16 *B, bf16 *C, 
     case 104:
       runKernel104(M, N, K, A, B, C, DB, iterations);
       break;
+    case 112:
+      runKernel112(M, N, K, A, B, C, DB, iterations);
+      break;
+    case 120:
+      runKernel120(M, N, K, A, B, C, DB, iterations);
+      break;
     case 128:
       runKernel128(M, N, K, A, B, C, DB, iterations);
+      break;
+    case 136:
+      runKernel136(M, N, K, A, B, C, DB, iterations);
+      break;
+    case 144:
+      runKernel144(M, N, K, A, B, C, DB, iterations);
       break;
     case 152:
       runKernel152(M, N, K, A, B, C, DB, iterations);
       break;
     case 160:
       runKernel160(M, N, K, A, B, C, DB, iterations);
+      break;
+    case 168:
+      runKernel168(M, N, K, A, B, C, DB, iterations);
+      break;
+    case 176:
+      runKernel176(M, N, K, A, B, C, DB, iterations);
+      break;
+    case 184:
+      runKernel184(M, N, K, A, B, C, DB, iterations);
+      break;
+    case 192:
+      runKernel192(M, N, K, A, B, C, DB, iterations);
+      break;
+    case 200:
+      runKernel200(M, N, K, A, B, C, DB, iterations);
+      break;
+    case 208:
+      runKernel208(M, N, K, A, B, C, DB, iterations);
+      break;
+    case 216:
+      runKernel216(M, N, K, A, B, C, DB, iterations);
+      break;
+    case 224:
+      runKernel224(M, N, K, A, B, C, DB, iterations);
+      break;
+    case 232:
+      runKernel232(M, N, K, A, B, C, DB, iterations);
+      break;
+    case 240:
+      runKernel240(M, N, K, A, B, C, DB, iterations);
+      break;
+    case 248:
+      runKernel248(M, N, K, A, B, C, DB, iterations);
+      break;
+    case 256:
+      runKernel256(M, N, K, A, B, C, DB, iterations);
       break;
   }
 }
@@ -122,11 +226,12 @@ __global__ void warmupKernel() {
 
 int main(int argc, char** argv) {
  unsigned long long iterations;
- int kernel_num = 3; // Default kernel number
+ int kernel_num = 128; // Default kernel number
 if (argc != 2 && argc != 3) {
     // Usage message now reflects the two accepted patterns
     fprintf(stderr, "usage: %s <iterations>\n", argv[0]);
     fprintf(stderr, "   or: %s <kernel_number> <iterations>\n", argv[0]);
+    fprintf(stderr, "kernel_number: 128 (default), or any wgmma N shape (multiple of 8, 8-256)\n");
     exit(1);
 } else if (argc == 3) {
     // Case 1: Two arguments provided
