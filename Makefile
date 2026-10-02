@@ -1,7 +1,25 @@
 CCCL_INCLUDE= -I$(SCRATCH)/cccl/libcudacxx/include
 NVCC_FLAGS = -std=c++17 -O3 -DNDEBUG -w
-NVCC_LDFLAGS = -lcublas -lcuda
 OUT_DIR = out
+
+# A standard CUDA Toolkit install keeps libcublas.so alongside libcudart in
+# $(CUDA_HOME)/lib64, which nvcc already searches by default. NVIDIA HPC SDK
+# installs instead split the math libraries out into a sibling
+# math_libs/<ver>/.../lib(64) tree (sometimes only as a REDIST copy built
+# against a different CUDA version than $(CUDA_HOME)), so -lcublas doesn't
+# resolve there unless we locate and add that directory explicitly. This finds
+# nothing (and leaves NVCC_LDFLAGS untouched) on a normal CUDA Toolkit install.
+CUBLAS_LIBDIR := $(shell root=$$(dirname $$(dirname "$(CUDA_HOME)")); \
+    hit=$$(find "$$root/math_libs" -name 'libcublas.so' 2>/dev/null | head -1); \
+    [ -z "$$hit" ] && hit=$$(find "$$root" -name 'libcublas.so' 2>/dev/null | head -1); \
+    [ -n "$$hit" ] && dirname "$$hit")
+
+NVCC_LDFLAGS :=
+# -L must precede -lcublas on the command line for the linker to use it.
+ifneq ($(strip $(CUBLAS_LIBDIR)),)
+NVCC_LDFLAGS += -L$(CUBLAS_LIBDIR) -Xlinker -rpath -Xlinker $(CUBLAS_LIBDIR)
+endif
+NVCC_LDFLAGS += -lcublas -lcuda
 
 CUDA_OUTPUT_FILE = -o $(OUT_DIR)/$@
 NCU_PATH := $(shell which ncu)
